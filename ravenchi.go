@@ -30,7 +30,12 @@ func SentryRecovery(handler http.Handler) http.Handler {
 				}
 
 				rvalStr := fmt.Sprint(rval)
-				packet := raven.NewPacket(rvalStr, raven.NewException(errors.New(rvalStr), raven.GetOrNewStacktrace(rval.(error), 2, 3, nil)), raven.NewHttp(r))
+				var packet *raven.Packet
+				if err, ok := rval.(error); ok {
+					packet = raven.NewPacket(rvalStr, raven.NewException(errors.New(rvalStr), raven.GetOrNewStacktrace(err, 2, 3, nil)), raven.NewHttp(r))
+				} else {
+					packet = raven.NewPacket(rvalStr, raven.NewException(errors.New(rvalStr), raven.NewStacktrace(2, 3, nil)), raven.NewHttp(r))
+				}
 				raven.Capture(packet, nil)
 				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			}
